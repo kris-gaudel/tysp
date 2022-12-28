@@ -124,7 +124,7 @@ function evaluate(x: any, env = globalEnv): any {
     }
 }
 
-function repl(prpmpt = "ljsp> ") {
+function repl(prpmpt = "tysp> ") {
     process.stdin.resume();
     process.stdin.setEncoding("utf8");
 

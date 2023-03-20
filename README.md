@@ -9,7 +9,7 @@ An interpreter for a simple Scheme (dialect of Lisp), written in Typescript. Hea
 ## Overview
 The interpreter is comprised of 2 main components:
 + Parser - Tokenizing and Abstract Syntax Tree generation
-+ Evaluator - Perform desired operations based on an environment and scheme specific keywords (e.g., `lambda`, `define`)
++ Evaluator - Perform desired operations based on an environment and scheme specific keywords (e.g., `if`, `lambda`, `define`)
 
 The main features of this interpreter include:
 + Mathematical and comparison operators 

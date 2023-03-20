@@ -33,6 +33,8 @@ npm start
 ```sh
 tysp.ts> (expt 4 2)
 16
+tysp.ts> (define r 10)
+undefined
 tysp.ts> (* pi (* r r))
 314.159265359
 tysp.ts> (if (> (* 11 11) 120) (* 7 6) oops)

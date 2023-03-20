@@ -1,59 +1,47 @@
-// Types for the Tysp language that aren't already defined in default library
 type LispSymbol = string;
-type Atom = string | number;
-type List = any[]
-type Exp = Atom | List;
-type Env = Map<any, any>;
+type LispNumber = number;
+type LispAtom = LispSymbol | LispNumber;
+type LispList = any[];
+type LispExp = LispAtom | LispList;
+type LispEnv = Map<any, any>;
 
-function isLispList(x: any): boolean {
-    return Array.isArray(x);
-}
-
-function isLispSymbol(x: any): boolean {
-    return typeof x === "string";
-}
-
-function isNum(x: any): boolean {
-    return typeof x === "number";
-}
-
-function tokenize(chars: string): List {
+function tokenize(chars: string): LispList {
     // Convert a string of characters into list of tokens
     return chars
         .replace(/[(]/g, " ( ")
         .replace(/[)]/g, " ) ")
         .split(' ')
-        .filter(x => x !== '');
+        .filter(x => x !== "");
 }
 
-function parse(program: string): Exp {
-    return readFromTokens(tokenize(program));
+// Sanity check 1
+// let program: string = "(begin (define r 10) (* pi (* r r)))"
+// console.log(tokenize(program))
+
+function parse(program: string): LispExp {
+    return read_from_tokens(tokenize(program));
 }
 
-function readFromTokens(tokens: string[]): Exp {
+function read_from_tokens(tokens: LispList): LispExp {
     if (tokens.length == 0) {
-        throw new Error('Unexpected EOF');
+        throw "Unexpected EOF";
     }
-    // Length of tokens will never be 0, hence token will never be undefined
-    // @ts-ignore
-    let token: string = tokens.shift(); // Shift "pops" off the first element in list
-
+    let token: LispAtom | any = tokens.shift();;
     if (token == "(") {
-        let L: string[] = [];
-        while (tokens[0] != ")") {
-            // Length of tokens will never be 0, hence token will never be undefined
-            // @ts-ignore
-            L.push(readFromTokens(tokens));
+        let L: LispExp = [];
+        while (tokens[0] != ')') {
+            L.push(read_from_tokens(tokens));
         }
-        tokens.shift(); // Pop off ')'
+        tokens.shift();
         return L;
     } else if (token == ")") {
-        throw new Error('Unexpected )');
+        throw "Unexpected )";
+    } else {
+        return atom(token);
     }
-    return atom(token);
 }
 
-function atom(token: string): Atom {
+function atom(token: string): LispAtom {
     if (/^\d+$/.test(token)) {
         return Number.parseInt(token);
     } else if (/^\d+\.\d+$/.test(token)) {
@@ -62,92 +50,85 @@ function atom(token: string): Atom {
     return token;
 }
 
-function standardEnv(): Env {
-    let globalEnv = new Map<string, any>([
-        ["+", (x: number, y: number) => x + y],
-        ["-", (x: number, y: number) => x - y],
-        ["*", (x: number, y: number) => x * y],
-        ["/", (x: number, y: number) => x / y],
-        [">", (x: any, y: any) => x > y],
-        ["<", (x: any, y: any) => x < y],
-        [">=", (x: any, y: any) => x >= y],
-        ["<=", (x: any, y: any) => x <= y],
-        ["=", (x: any, y: any) => x === y],
-        ["abs", (x: number) => Math.abs(x)],
-        ["append", (x: any[], y: any[]) => [...x, ...y]],
-        ["apply", (x: any, f: any) => f(...x)],
-        ["begin", (...x: any[]) => x[x.length - 1]],
-        ["car", (...x: any[]) => x[0]],
-        ["cdr", (...x: any[]) => x.slice(1)],
-        ["cons", (x: any, y: any) => [x, y]],
-        ["eq?", (x: any, y: any) => Object.is(x, y)],
-        ["expt", (x: number, y: number) => Math.pow(x, y)],
-        ["equal?", (x: any, y: any) => x === y],
-        ["length", (x: any[]) => x.length],
-        ["list", (...x: any[]) => x],
-        ["list?", (...x: any[]) => isLispList(x)],
-        ["not", (...x: any) => !!!x],
-        ["null", (...x: any[]) =>  x === undefined || x === null],
-        ["symbol?", (...x: any) => isLispSymbol(x)],
-        // TODO: Implement other methods
-        // ["map", (...x: any[]) => Array.isArray(x)],
-        // ["max", (...x: any[]) => Array.isArray(x)],
-        // ["min", (...x: any[]) => Array.isArray(x)],
-        // ["number", (...x: any[]) => Array.isArray(x)],
-        // ["print", (...x: any[]) => Array.isArray(x)],
-        // ["procedure", (...x: any[]) => Array.isArray(x)],
-        // ["round", (...x: any[]) => Array.isArray(x)],
-    ]);
-    return globalEnv;
+// Sanity check 2
+// let program: string = "(begin (define r 10) (* pi (* r r)))"
+// console.log(parse(program))
+
+function standard_env(): LispEnv {
+    let env: LispEnv = new Map<string, any>([]);
+    env.set("pi", Math.PI);
+    env.set("+", (x: LispNumber, y: LispNumber): LispNumber => x + y);
+    env.set("-", (x: LispNumber, y: LispNumber): LispNumber => x - y);
+    env.set("*", (x: LispNumber, y: LispNumber): LispNumber => x * y);
+    env.set("/", (x: LispNumber, y: LispNumber): LispNumber => x / y);
+    env.set(">", (x: LispNumber, y: LispNumber): boolean => x > y);
+    env.set("<", (x: LispNumber, y: LispNumber): boolean => x < y);
+    env.set(">=", (x: LispNumber, y: LispNumber): boolean => x >= y);
+    env.set("<=", (x: LispNumber, y: LispNumber): boolean => x <= y);
+    env.set("=", (x: LispNumber, y: LispNumber): boolean => x === y);
+    env.set("abs", (x: LispNumber): LispNumber => Math.abs(x));
+    env.set("apply", (x: LispList, y: LispList): LispList => [...x, ...y]);
+    env.set("expt", (x: LispNumber, y: LispNumber): LispNumber => Math.pow(x, y));
+    env.set("begin", (...x: LispList): LispList => x[x.length - 1]);
+    // TODO: Add other operations
+    return env;
 }
 
-const globalEnv: Env = standardEnv();
+const globalEnv: LispEnv = standard_env();
 
-function evaluate(x: any, env = globalEnv): any {
-    if (isLispSymbol(x)) {
-      return env.get(x);
-    } else if (isNum(x)) {
-      return x;
-    } else if (x[0] === "if") {
-      const [_, test, conseq, alt, ..._rest] = x;
-      const exp: any = evaluate(test, env) ? conseq : alt;
-      return evaluate(exp, env);
-    } else if (x[0] === "define") {
-      const [_, symbol, exp, ..._rest] = x;
-      env.set(symbol, evaluate(exp, env) as any);
+function eval(input: LispExp, env: LispEnv): LispExp | any {
+    if (typeof input === "number") {
+        return input;
+    } else if (typeof input === "string") {
+        return env.get(input);
+    } else if (input[0] === "if") {
+        let [_, test, conseq, alt, ..._rest] = input;
+        let exp: LispExp = (eval(test, env) ? conseq : alt);
+        return eval(exp, env);
+    } else if (input[0] === "define") {
+        let [_, symbol, exp, ..._rest] = input;
+        env.set(symbol, eval(exp, env));
+    } else if (input[0] === "lambda") {
+        let [_, params, func] = input;
+        return (...args: any[]) => {
+            let local_env: LispEnv = new Map<any, any>();
+            for (let i = 0; i < Math.min(params.length, args.length); i++) {
+                local_env.set(params[i], args[i]);
+            }
+            let new_env: LispEnv = new Map<any, any>([...local_env, ...env]);
+            return eval(func, new_env);
+        }
     } else {
-      const proc: any = evaluate(x[0], env);
-      const args: any[] = x
+        let proc: any = eval(input[0], env);
+        let args: LispList = input
         .slice(1)
-        .map((element: any) => evaluate(element, env));
-      return proc(...args);
+        .map((element: LispExp) => eval(element, env));
+        return proc(...args);
     }
 }
 
-function repl(prpmpt = "tysp> ") {
+// Sanity check 3
+// console.log(eval(parse("(begin (define r 10) (* pi (* r r)))")))
+
+function repl(prpmpt = `tysp.ts>`) {
     process.stdin.resume();
     process.stdin.setEncoding("utf8");
 
     process.stdin.on("data", (chunk) => {
-      if (!/\S/.test(toString(chunk))) {
+      if (!/\S/.test(`${chunk}`)) {
         return process.stdout.write(prpmpt);
       }
-      const val = evaluate(parse(toString(chunk)));
-      return process.stdout.write(schemestr(val));
+      const val = eval(parse(`${chunk}`), globalEnv);
+      return process.stdout.write(`${scheme_str(val)}\n`);
     });
 }
 
-function schemestr(exp: any): string {
-    if (isLispList(exp)) {
-        return `( ${exp.map((e: any) => schemestr(e)).join("")})`;
+function scheme_str(exp: any): string {
+    if (Array.isArray(exp)) {
+        return `( ${exp.map((e: any) => scheme_str(e)).join("")})`;
     } else {
-        return toString(exp);
+        return `${exp}`;
     }
 }
 
-function toString(x: any) {
-    return `${x}`;
-};
-
-// Start the REPL
 repl();

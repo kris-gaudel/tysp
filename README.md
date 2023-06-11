@@ -47,4 +47,4 @@ tysp.ts> (fact 10)
 
 ## Next Steps
 + Implement more functions (e.g., `cons`, `eq?`, etc)
-+ Unit testing in Jest
++ Testing
